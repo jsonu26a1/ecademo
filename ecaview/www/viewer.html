@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<head>
+  <script src="viewer.js"></script>
+</head>
+<body>
+  <script>
+    function scale_up(img, n) {
+      let canvas = document.createElement("canvas");
+      canvas.width = n;
+      canvas.height = n;
+      let ctx = canvas.getContext("2d");
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(img, 0, 0, n, n);
+      return canvas;
+    }
+
+    function checkerboard_bg(img) {
+      let a = "#00FFFF";
+      let b = "#FF00FF";
+      let canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      let ctx = canvas.getContext("2d");
+      ctx.fillStyle = a;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // let l = 255 * 0.5
+      // ctx.fillStyle = `rgb(${l} ${l} ${l})`;
+      ctx.fillStyle = b;
+      for(let x = 0; x < canvas.width; x++) {
+        if(x % 2 == 0) {
+          ctx.fillRect(x, 0, 1, 1);
+        }
+      }
+      let pattern = ctx.getImageData(0, 0, canvas.width, 1);
+      for(let y = 1; y < canvas.height; y++) {
+        let n = 0;
+        if(y % 2 == 1) {
+          n = 1;
+        }
+        ctx.putImageData(pattern, n, y);
+      }
+      ctx.globalAlpha = 0.7;
+      ctx.drawImage(img, 0, 0);
+      return canvas;
+    }
+
+    async function debug_file(file) {
+      let buffer = await (await fetch(file)).arrayBuffer();
+      let automaton = new Automaton(import_automaton(buffer));
+      console.log(automaton);
+      for(let row of automaton.rows) {
+        let first = row.data[0];
+        console.log(row, first, first.toString(2));
+        console.log(row.slice(-10, 20));
+        console.log(row.slice(0, 10));
+      }
+
+      let div = document.createElement("div");
+      div.innerHTML = `<pre>${file}</pre>`;
+      // div.appendChild(automaton.render(-256, 0, 512, 512));
+      let canvas = automaton.render(-8, 0, 8, 8);
+      canvas = checkerboard_bg(canvas);
+      canvas = scale_up(canvas, 128);
+      canvas.style.outline = "1px solid black";
+
+      div.appendChild(canvas);
+      document.body.appendChild(div);
+    }
+    files = [
+      // "test_run_01.bin",
+      "test_pattern_01.bin",
+    ];
+    for(let file of files) {
+      debug_file(file);
+    }
+  </script>
+</body>
